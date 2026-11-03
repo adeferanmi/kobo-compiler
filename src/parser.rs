@@ -185,6 +185,10 @@ impl Parser {
         // TODO(you): spec 3.2: unary operators are right-associative.
         // TEMPORARY: enough of this rule to let the ones below it run. Replace it in its
         //            own week; the marking tests for it fail until you do.
+        if self.matches(&[TokenType::Bang]) || self.matches(&[TokenType::Minus]){
+            return self.unary();
+        }
+
         self.call()
     }
 
