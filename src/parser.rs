@@ -140,7 +140,22 @@ impl Parser {
         //            afterwards, because the rule is not LL(1).
         // TEMPORARY: enough of this rule to let the ones below it run. Replace it in its
         //            own week; the marking tests for it fail until you do.
-        self.or()
+        let mut expr =self.or()?;
+
+        if self.matches(&[TokenType::Equal]){
+            let equals = self.previous();
+            let value = self.assignment()?;
+
+            if let Expr::Variable {name, at} = expr{
+                return Ok(Expr::Assign {
+                    name,
+                    value: Box::new(value),
+                    at,
+                });
+            }
+        }
+
+        Ok(expr)
     }
 
     fn or(&mut self) -> Parsed<Expr> {
@@ -290,7 +305,7 @@ impl Parser {
                     }
                 }
 
-                let paren = p.consume(TokenType::RParen, "Expected ')' after arguments.")?;
+                let paren = p.consume(TokenType::RParen, "Expect ')' after arguments.")?;
 
                 Ok(Expr::Call {
                     callee: Box::new(callee),
@@ -341,7 +356,7 @@ impl Parser {
 
         if self.matches(&[TokenType::LParen]){
             let expr = self.expression()?;
-            self.consume(TokenType::LParen, "Expected ')' after expression")?;
+            self.consume(TokenType::LParen, "Expect ')' after expression")?;
             return Ok(Expr::Grouping(Box::new(expr)));
         }
 
