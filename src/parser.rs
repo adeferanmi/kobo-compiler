@@ -96,7 +96,7 @@ impl Parser {
 
     fn return_statement(&mut self) -> Parsed<Stmt> {
         // TODO(you): spec 3.1: 'return' expression? ';'
-        todo!("return_statement")
+        Ok(Stmt::Return(Some(self.expression()?)))
     }
 
     fn if_statement(&mut self) -> Parsed<Stmt> {
