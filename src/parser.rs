@@ -197,7 +197,12 @@ impl Parser {
         // TEMPORARY: enough of this rule to let the ones below it run. Replace it in its
         //            own week; the marking tests for it fail until you do.
         if self.matches(&[TokenType::Bang, TokenType::Minus]) {
-            return self.unary();
+            let op = self.previous();
+            let right = self.unary()?;
+            return Ok(Expr::Unary {
+                op,
+                right: Box::new(right),
+            });
         }
 
         self.call()
