@@ -153,7 +153,10 @@ impl Parser {
                     at,
                 });
             }
+
+            self.error_at(&equals, "Cannot assign to this expression.");
         }
+
 
         Ok(expr)
     }
