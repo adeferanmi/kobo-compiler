@@ -112,7 +112,7 @@ impl Parser {
 
     fn var_declaration(&mut self) -> Parsed<Stmt> {
         // TODO(you): spec 3.1: 'var' name ( '=' expression )? ';'
-        let name = self.consume(TokenType::Identifier, "Expect variable name")?;
+        let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
 
         let initialiser = if self.matches(&[TokenType::Equal]){
             Some(self.expression()?)
@@ -121,7 +121,7 @@ impl Parser {
             None
         };
 
-        self.consume(TokenType::Semicolon, "Expect ';' after variable declaration")?;
+        self.consume(TokenType::Semicolon, "Expect ';' after variable declaration.")?;
 
         Ok(Stmt::Var {
             name,
