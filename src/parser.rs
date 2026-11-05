@@ -50,6 +50,14 @@ impl Parser {
         // TEMPORARY: enough of this rule to let the ones below it run. Replace it in its
         //            own week; the marking tests for it fail until you do.
 
+        if self.matches(&[TokenType::Fun]){
+            return self.fun_declaration();
+        }
+
+        if self.matches(&[TokenType::Var]){
+            return self.var_declaration()
+        }
+
         self.statement()
     }
 
