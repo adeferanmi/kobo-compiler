@@ -500,8 +500,11 @@ impl Parser {
         // TEMPORARY: enough of this rule to let the ones below it run. Replace it in its
         //            own week; the marking tests for it fail until you do.
         self.depth = 0;
+        if !self.at_end(){
+            self.current += 1
+        }
+
         while !self.at_end() {
-            self.current += 1;
             if self.previous().kind == TokenType::Semicolon {
                 return;
             }
