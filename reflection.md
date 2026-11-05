@@ -1,25 +1,64 @@
 # CA1 Reflection
 
-## 1. Numbers and the fractional part
+## 1. Dangling Else
 
-The check is at `src/scanner.rs:131`. I only treat a dot as part of a number if the character after it is a digit. I used `peek()` and `peek_next()` for this because I don't want the scanner consuming a character it isn't supposed to. For `5.`, it reads `5` as a `NUMBER`, but it doesn't include the dot because there is no digit after it. When the scanner gets to the dot on its next iteration, it reports `Character is not part of any token.` That's what section 1.4 requires: a decimal point needs digits on both sides to belong to a number. The same rule is why `.5` doesn't count as a single number either. I initially thought number scanning was just about consuming digits, but the lookahead is what stops it from accepting an incomplete decimal.
+Lines `src/parser.rs:193` to `src/parser.rs:197` resolve the dangling else.
 
-## 2. Line counting and EOF
-
-I increment `line` in two places: `src/scanner.rs:95` for a newline encountered during normal scanning, and `src/scanner.rs:112` for a newline inside a string. I need both because a string can span multiple lines, and I still have to report where its token ends. EOF was the part that gave me problems. At first, I was adding it using the normal `add()` function, which used the scanner's current line and sliced the source for its lexeme. So files with blank lines or test comments at the end gave me the wrong EOF line and even a newline as its lexeme. I fixed that at `src/scanner.rs:34-39`: I get the line from the last actual token and push EOF with an empty string. If a file ends with two blank lines, EOF still gets the last real token's line, as section 6.1 requires. If there are no tokens, it defaults to line 1.
-
-## 3. A test I failed and what I learned
-
-I failed `tests/phase-1/valid/eof_line.kobo` while working on the scanner. My mistake was assuming EOF should use whatever line the scanner had reached when it finished reading the file. I hadn't accounted for trailing whitespace and comments: they move the scanner forward without creating another real token. That made several valid tests fail even though the other tokens were being recognised correctly. The fix is at `src/scanner.rs:34-39`. Instead of calling `self.add(TokenType::Eof)`, I take the line of the last token and create EOF separately with an empty lexeme. After fixing this and an earlier identifier-slicing mistake, all 14 published tests passed. This taught me that matching the token types isn't enough; the exact output format and line-number rules matter too.
-
-**Git history note:** My available history shows the starter commit `711ec39` and completed scanner commit `6ad2e0d`. The intermediate failing version was not committed, so I cannot truthfully provide the two before-and-after bug-fix commits requested for this question. In the completed commit, the relevant fixed lines are:
-
-```rust
-let eof_line = self.tokens.last().map_or(1, |token| token.line);
-
-self.tokens.push(Token {
-    kind: TokenType::Eof,
-    lexeme: String::new(),
-    line: eof_line,
-});
+``` rust
+    let else_branch = if self.matches(&[TokenType::Else]) {
+    Some(Box::new(self.statement()?))
+    } else {
+        None
+    };
 ```
+Recursive descent resolves the ambiguity because the inner if_statement() call eagerly consumes an else token if one is present before returning control back to the outer if_statement(). The grammar itself is ambiguous, but the call stack enforces that the nearest matching if swallows the else first.   For if (false) if (true) print "a"; else print "b";, the parser outputs:
+
+``` rust
+    (if false (if true (print "a")) (print "b"))
+```
+
+If the else bound to the outer if instead, it would output:
+
+``` rust
+    (if false (if true (print "a") (print "b")))
+```
+
+Git Commit Anchors:
+
+Wrong/Incomplete (Commit `f2e4d6c` / initial starter): `todo!("if_statement")`
+
+Fixed (Commit `18aedd9`): `let else_branch = if self.matches(&[TokenType::Else]) { Some(Box::new(self.statement()?)) } else { None };`
+
+## 2. Assignment Function and LL1
+
+The check verifying the target of an assignment is at `src/parser.rs:266` to `src/parser.rs:272`:
+
+``` rust
+    if let Expr::Variable {name, at} = expr{
+        return Ok(Expr::Assign {
+            name,
+            value: Box::new(value),
+            at,
+        });
+    }
+```
+
+This check cannot happen before parsing the left side because assignment is not LL(1). Given an input like a = 1; versus a + 1;, reading the single token a does not provide enough lookahead to distinguish between a variable assignment target and the beginning of a larger arithmetic expression. The parser must parse the entire left-hand side as an ordinary expression first, and then retrospectively inspect whether the evaluated AST node turned out to be a bare variable identifier.   Executing 1 = 2; produces the exact error message specified in Section 5.1:
+
+`"Cannot assign to this expression."`
+
+Git Commit Anchors:
+
+Wrong/Incomplete (Commit `be4d59b`): `self.or()`
+
+Fixed (Commit `1622563`): `if let Expr::Variable { name, at } = expr {`
+
+## 3. Synchronisation
+
+The synchronise method is implemented at `src/parser.rs:497-524`. It advances past the error token and discards tokens until `self.previous().kind` is `TokenType::Semicolon` or `self.peek().kind` matches one of the statement-beginning keywords: `Fun`, `Var`, `If`, `While`, `Print`, or `Return`. These tokens are targeted because a semicolon marks the end of a broken statement, and these keywords reliably signal the start of a new top-level declaration or statement, re-aligning the parser safely.   If the call to `synchronise()` at line 18 is deleted, the invalid test `tests/phase-2/invalid/expect_semicolon_after_value.kobo` changes output. Instead of producing a single error:
+
+`[line 2] Error at 'print': Expect ';' after value.`
+
+Wrong/Incomplete (Commit `0630a6e`): Infinite step / double increment logic inside recovery loop: `self.depth = 0; while !self.at_end() { self.current += 1; ... }`
+
+Fixed (Commit `33b7403`): `if !self.at_end() { self.current += 1; }`
