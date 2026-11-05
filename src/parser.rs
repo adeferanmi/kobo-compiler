@@ -476,7 +476,7 @@ impl Parser {
 
         if self.matches(&[TokenType::LParen]){
             let expr = self.expression()?;
-            self.consume(TokenType::RParen, "Expect ')' after expression")?;
+            self.consume(TokenType::RParen, "Expect ')' after expression.")?;
             return Ok(Expr::Grouping(Box::new(expr)));
         }
 
