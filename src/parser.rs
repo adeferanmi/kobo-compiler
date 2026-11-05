@@ -51,11 +51,11 @@ impl Parser {
         //            own week; the marking tests for it fail until you do.
 
         let result = if self.matches(&[TokenType::Fun]){
-            return self.fun_declaration();
+             self.fun_declaration()
         }
 
         else if self.matches(&[TokenType::Var]){
-            return self.var_declaration()
+            self.var_declaration()
         }
 
         else { self.statement() };
