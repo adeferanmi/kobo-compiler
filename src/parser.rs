@@ -169,9 +169,14 @@ impl Parser {
 
     fn return_statement(&mut self) -> Parsed<Stmt> {
         // TODO(you): spec 3.1: 'return' expression? ';'
-        let stmt = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expect ';' after expression")?;
-        Ok(Stmt::Return(Some(stmt)))
+        let value = if !self.check(TokenType::Semicolon) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        self.consume(TokenType::Semicolon, "Expect ';' after return value.")?;
+        Ok(Stmt::Return(value))
     }
 
     fn if_statement(&mut self) -> Parsed<Stmt> {
