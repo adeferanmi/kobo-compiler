@@ -50,15 +50,21 @@ impl Parser {
         // TEMPORARY: enough of this rule to let the ones below it run. Replace it in its
         //            own week; the marking tests for it fail until you do.
 
-        if self.matches(&[TokenType::Fun]){
+        let result = if self.matches(&[TokenType::Fun]){
             return self.fun_declaration();
         }
 
-        if self.matches(&[TokenType::Var]){
+        else if self.matches(&[TokenType::Var]){
             return self.var_declaration()
         }
 
-        self.statement()
+        else { self.statement() };
+
+        if result.is_err(){
+            self.synchronise()
+        }
+
+        result
     }
 
     fn fun_declaration(&mut self) -> Parsed<Stmt> {
@@ -115,7 +121,7 @@ impl Parser {
             None
         };
 
-        self.consume(TokenType::Semicolon, "Expect ';' after identifier declaration");
+        self.consume(TokenType::Semicolon, "Expect ';' after identifier declaration")?;
 
         Ok(Stmt::Var {
             name,
@@ -163,7 +169,9 @@ impl Parser {
 
     fn return_statement(&mut self) -> Parsed<Stmt> {
         // TODO(you): spec 3.1: 'return' expression? ';'
-        Ok(Stmt::Return(Some(self.expression()?)))
+        let stmt = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after expression")?;
+        Ok(Stmt::Return(Some(stmt)))
     }
 
     fn if_statement(&mut self) -> Parsed<Stmt> {
@@ -244,7 +252,7 @@ impl Parser {
         //            afterwards, because the rule is not LL(1).
         // TEMPORARY: enough of this rule to let the ones below it run. Replace it in its
         //            own week; the marking tests for it fail until you do.
-        let mut expr =self.or()?;
+        let expr =self.or()?;
 
         if self.matches(&[TokenType::Equal]){
             let equals = self.previous();
@@ -345,7 +353,7 @@ impl Parser {
         // TODO(you): spec 3.2, one rung of the precedence ladder.
         let mut expr = self.factor()?;
 
-        while (self.matches(&[TokenType::Minus, TokenType::Plus])){
+        while self.matches(&[TokenType::Minus, TokenType::Plus]){
             let op = self.previous();
             let right = self.factor()?;
             expr = Expr::Binary {
@@ -492,6 +500,18 @@ impl Parser {
             if self.previous().kind == TokenType::Semicolon {
                 return;
             }
+
+            match self.peek().kind {
+                TokenType::Fun
+                | TokenType::Var
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => {}
+            }
+
+            self.current += 1;
         }
     }
 
