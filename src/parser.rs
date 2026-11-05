@@ -205,11 +205,11 @@ impl Parser {
 
     fn while_statement(&mut self) -> Parsed<Stmt> {
         // TODO(you): spec 3.1: 'while' '(' expression ')' statement
-        self.consume(TokenType::LParen, "Expect '(' after 'if'.")?;
+        self.consume(TokenType::LParen, "Expect '(' after 'while'.")?;
 
         let condition = self.expression()?;
 
-        self.consume(TokenType::RParen, "Expect ')' after 'if'.")?;
+        self.consume(TokenType::RParen, "Expect ')' after 'condition'.")?;
 
         let body = self.statement()?;
 
