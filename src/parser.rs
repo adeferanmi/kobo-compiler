@@ -209,7 +209,7 @@ impl Parser {
 
         let condition = self.expression()?;
 
-        self.consume(TokenType::RParen, "Expect ')' after 'condition'.")?;
+        self.consume(TokenType::RParen, "Expect ')' after while condition.")?;
 
         let body = self.statement()?;
 
