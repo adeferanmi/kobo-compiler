@@ -8,10 +8,19 @@ use crate::ast::{Expr, Function, Program, Resolved, Stmt};
 /// which is what makes mutual recursion legal, so a name that matches no local is a
 /// global by construction. Spec section 7.
 pub fn resolve(program: &mut Program) {
-    // TODO(you): spec 7, 'The resolver': walk every function body in its own frame (4.3), then
-    //            the script. A function's body sees its own scopes and the globals and nothing
-    //            between.
-    todo!("resolve")
+    for func in &mut program.functions {
+        let mut r = Resolver::default();
+        // Parameters live in scope depth 1 (the function's outermost local scope)
+        r.depth = 1;
+        for param in &func.params {
+            r.declare(param);
+            r.define(param);
+        }
+        r.statements(&mut func.body);
+    }
+
+    let mut script_resolver = Resolver::default();
+    script_resolver.statements(&mut program.stmts);
 }
 
 struct Local {
