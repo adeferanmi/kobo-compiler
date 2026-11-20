@@ -185,6 +185,7 @@ impl Vm {
             }
             _ => Err(error(line, "This value is not a function.")),
         }
+    }
 
     // --- primitives -------------------------------------------------------------------
 
