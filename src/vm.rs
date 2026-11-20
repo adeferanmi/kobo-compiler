@@ -173,7 +173,7 @@ impl Vm {
                         &format!("Expected {} arguments but got {}.", arity, argc),
                     ));
                 }
-                if self.frames.len() >= MAX_FRAMES {
+                if self.frames.len() > MAX_FRAMES {
                     return Err(error(line, "Stack overflow."));
                 }
                 self.frames.push(Frame {
