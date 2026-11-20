@@ -71,8 +71,16 @@ impl Resolver {
 
     /// `None` at the top level of the script, where a declaration is a global.
     fn define(&mut self, name: &str) -> Option<usize> {
-        // TODO(you): make it usable, and hand back its stack slot.
-        todo!("define")
+        if self.depth == 0 {
+            return None;
+        }
+        for (i, local) in self.locals.iter_mut().enumerate().rev() {
+            if local.scope == self.depth && local.name == name {
+                local.initialised = true;
+                return Some(i);
+            }
+        }
+        None
     }
 
     /// Innermost first, so the nearest declaration wins and an outer one stays shadowed.
